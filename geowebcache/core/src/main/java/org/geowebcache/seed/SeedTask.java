@@ -34,7 +34,7 @@ import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
 
-class SeedTask extends GWCTask {
+public class SeedTask extends GWCTask {
     private static Log log = LogFactory.getLog(org.geowebcache.seed.SeedTask.class);
 
     private final TileRangeIterator trIter;
@@ -62,11 +62,12 @@ class SeedTask extends GWCTask {
      *            - the SeedRequest
      */
     public SeedTask(StorageBroker sb, TileRangeIterator trIter, TileLayer tl, boolean reseed,
-            boolean doFilterUpdate) {
+            boolean doFilterUpdate, PRIORITY priority) {
         this.storageBroker = sb;
         this.trIter = trIter;
         this.tl = tl;
         this.reseed = reseed;
+        this.priority = priority;
         this.doFilterUpdate = doFilterUpdate;
 
         tileFailureRetryCount = 0;
@@ -75,9 +76,9 @@ class SeedTask extends GWCTask {
         sharedFailureCounter = new AtomicLong();
 
         if (reseed) {
-            super.parsedType = GWCTask.TYPE.RESEED;
+            super.taskType = GWCTask.TYPE.RESEED;
         } else {
-            super.parsedType = GWCTask.TYPE.SEED;
+            super.taskType = GWCTask.TYPE.SEED;
         }
         super.layerName = tl.getName();
 
@@ -88,9 +89,7 @@ class SeedTask extends GWCTask {
     protected void doActionInternal() throws GeoWebCacheException, InterruptedException {
         super.state = GWCTask.STATE.RUNNING;
 
-        // Lower the priority of the thread
-        Thread.currentThread().setPriority(
-                (java.lang.Thread.NORM_PRIORITY + java.lang.Thread.MIN_PRIORITY) / 2);
+        Thread.currentThread().setPriority(priority.getThreadPriority());
 
         checkInterrupted();
 

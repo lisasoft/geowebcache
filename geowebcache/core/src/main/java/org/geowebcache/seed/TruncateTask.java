@@ -27,7 +27,7 @@ import org.geowebcache.layer.TileLayer;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
 
-class TruncateTask extends GWCTask {
+public class TruncateTask extends GWCTask {
     private static Log log = LogFactory.getLog(TruncateTask.class);
 
     private final TileRange tr;
@@ -38,19 +38,23 @@ class TruncateTask extends GWCTask {
 
     private final StorageBroker storageBroker;
 
-    public TruncateTask(StorageBroker sb, TileRange tr, TileLayer tl, boolean doFilterUpdate) {
+    public TruncateTask(StorageBroker sb, TileRange tr, TileLayer tl, boolean doFilterUpdate, PRIORITY priority) {
         this.storageBroker = sb;
         this.tr = tr;
         this.tl = tl;
         this.doFilterUpdate = doFilterUpdate;
+        this.priority = priority;
 
-        super.parsedType = GWCTask.TYPE.TRUNCATE;
+        super.taskType = GWCTask.TYPE.TRUNCATE;
         super.layerName = tl.getName();
     }
 
     @Override
     protected void doActionInternal() throws GeoWebCacheException, InterruptedException {
         super.state = GWCTask.STATE.RUNNING;
+
+        Thread.currentThread().setPriority(priority.getThreadPriority());
+
         checkInterrupted();
         try {
             storageBroker.delete(tr);

@@ -7,7 +7,7 @@
     <param-name>contextConfigLocation</param-name>
     <param-value>/WEB-INF/acegi-config.xml</param-value>
   </context-param>
-  
+
   <!-- acegi security filter -->
   <filter>
     <filter-name>Acegi Filter Chain Proxy</filter-name>
