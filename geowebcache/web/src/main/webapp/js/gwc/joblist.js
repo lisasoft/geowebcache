@@ -6,14 +6,14 @@ Ext.require([
 ]);
 
 Ext.application({
-    name: 'GWCTaskList',
+    name: 'GWCJobList',
     appFolder: 'js/gwc',
     gwc: null,
     grid: null,
     
     launch: function() {
 		this.gwc = Ext.create('GWC.RestService');
-		this.gwc.loadTasks();
+		this.gwc.loadJobs();
 		this.grid = this.createGrid();
     },
     
@@ -44,17 +44,27 @@ Ext.application({
 	    );
 	},
 	
-    renderTask: function(value, p, record) {
-    	if(record.data.reseed && record.data.type == "SEED") {
-    		type = "RESEED";
+    renderJob: function(value, p, record) {
+    	if(record.data.reseed && record.data.jobType == "SEED") {
+    		jobType = "RESEED";
     	} else {
-    		type = record.data.type;
+    		jobType = record.data.jobType;
     	}
     	
 	    return Ext.String.format(
-	    	this.taskTemplate,
-	        type,
+	    	this.jobTemplate,
+	        jobType,
 	        record.data.layerName
+	    );
+	},
+	
+    renderRegion: function(value, p, record) {
+	    return Ext.String.format(
+	    	this.regionTemplate,
+	    	record.data.zoomStart,
+	    	record.data.zoomStop,
+	        record.data.srs,
+	        record.data.bounds
 	    );
 	},
 	
@@ -84,11 +94,20 @@ Ext.application({
 		}
 	},
 
+    renderThroughput: function(value, p, record) {
+		if(record.data.maxThroughput == -1) {
+			return "no limit";
+		} else {
+			return record.data.maxThroughput;
+		}
+	},
+	
 	createGrid: function() {
 		var g = Ext.create('Ext.grid.Panel', {
-	        taskTemplate: loadTaskTemplate(),
-	        title: 'Task List',
-	        store: this.gwc.getTaskStore(),
+	        jobTemplate: loadJobTemplate(),
+	        regionTemplate: loadRegionTemplate(),
+	        title: 'Job List',
+	        store: this.gwc.getJobStore(),
 	        disableSelection: true,
 	        loadMask: true,
 	        viewConfig: {
@@ -105,10 +124,10 @@ Ext.application({
 	            renderer: this.renderState,
 	            sortable: true
 	        },{
-	            text: "Task",
-	            dataIndex: 'taskId',
+	            text: "Job",
+	            dataIndex: 'jobId',
 	            flex: 20,
-	            renderer: this.renderTask,
+	            renderer: this.renderJob,
 	            sortable: false
 	        },{
 	            text: "Priority",
@@ -118,9 +137,11 @@ Ext.application({
 	            sortable: true
 	        },{
 	            text: "Region",
-	            dataIndex: 'region',
+	            dataIndex: 'bounds',
 	            width: 100,
 	            flex: 4,
+	            align: "center",
+	            renderer: this.renderRegion,
 	            sortable: false
 	        },{
 	            text: "Time",
@@ -138,14 +159,15 @@ Ext.application({
 	            sortable: true
 	        },{
 	            text: "Threads",
-	            dataIndex: 'threads',
+	            dataIndex: 'threadCount',
 	            width: 55,
 	            align: "center",
 	            sortable: true
 	        },{
 	            text: "Throughput",
-	            dataIndex: 'throughput',
+	            dataIndex: 'maxThroughput',
 	            width: 80,
+	            renderer: this.renderThroughput,
 	            align: "center",
 	            sortable: true
 	        },{
@@ -155,22 +177,37 @@ Ext.application({
 	            align: "center",
 	            sortable: true
 	        }],
-	        renderTo: 'tasklist'
+	        renderTo: 'joblist'
 	    });
 		
 		return g;
 	}
 });
 
-var loadTaskTemplate = function() {
+var loadJobTemplate = function() {
 	result = null;
 	Ext.Ajax.request({
-		url: 'js/gwc/tasktemplate.html',
+		url: 'js/gwc/jobtemplate.html',
 		success: function(response) {
     		result = response.responseText;
     	},
     	failure: function(response, opts) {
-    		alert('Couldn\'t load task template: ' + response.status);
+    		alert('Couldn\'t load job template: ' + response.status);
+    	},
+    	async: false
+	});
+	return result;
+};
+
+var loadRegionTemplate = function() {
+	result = null;
+	Ext.Ajax.request({
+		url: 'js/gwc/regiontemplate.html',
+		success: function(response) {
+    		result = response.responseText;
+    	},
+    	failure: function(response, opts) {
+    		alert('Couldn\'t load region template: ' + response.status);
     	},
     	async: false
 	});

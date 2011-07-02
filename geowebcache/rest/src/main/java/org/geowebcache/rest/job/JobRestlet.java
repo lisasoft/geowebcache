@@ -15,21 +15,18 @@
  * @author Marius Suta / The Open Planning Project 2008 
  * @author Arne Kepp / The Open Planning Project 2009 
  */
-package org.geowebcache.rest.task;
+package org.geowebcache.rest.job;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.config.XMLConfiguration;
+import org.geowebcache.job.JobDispatcher;
 import org.geowebcache.rest.GWCRestlet;
 import org.geowebcache.rest.RestletException;
-import org.geowebcache.seed.GWCTask;
-import org.geowebcache.task.TaskDispatcher;
-import org.geowebcache.util.ServletUtils;
+import org.geowebcache.storage.JobObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.restlet.data.MediaType;
@@ -51,13 +48,13 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
 
 /**
- * This is the task resource class required by the REST interface
+ * This is the job resource class required by the REST interface
  */
-public class TaskRestlet extends GWCRestlet {
+public class JobRestlet extends GWCRestlet {
     
     private XMLConfiguration xmlConfig;
     
-    private TaskDispatcher taskDispatcher;
+    private JobDispatcher jobDispatcher;
     
     public void handle(Request request, Response response) {
         Method met = request.getMethod();
@@ -65,7 +62,7 @@ public class TaskRestlet extends GWCRestlet {
             if(met.equals(Method.GET)) {
                 doGet(request, response);
             } else {
-                // These modify layers, so we reload afterwards
+                // These modify things, so we reload afterwards
                 if (met.equals(Method.POST)) {
                     doPost(request, response);
                 } else if (met.equals(Method.PUT)) {
@@ -77,7 +74,7 @@ public class TaskRestlet extends GWCRestlet {
                         Status.CLIENT_ERROR_METHOD_NOT_ALLOWED);
                 }
                 
-                taskDispatcher.reInit();
+                jobDispatcher.reInit();
             }
         } catch (RestletException re) {
             response.setEntity(re.getRepresentation());
@@ -91,7 +88,7 @@ public class TaskRestlet extends GWCRestlet {
     }
     
     /**
-     * GET outputs an existing task
+     * GET outputs an existing job
      * 
      * @param req
      * @param resp
@@ -99,34 +96,41 @@ public class TaskRestlet extends GWCRestlet {
      * @throws  
      */
     protected void doGet(Request req, Response resp) throws RestletException {
-        String taskIdent = null;
+        long jobId = -1;
         try {
-            if(req.getAttributes().get("task") == null) {
-                taskIdent = null;
+            if(req.getAttributes().get("job") == null) {
+                jobId = -1;
             } else {
-                taskIdent = URLDecoder.decode((String) req.getAttributes().get("task"), "UTF-8");
+                jobId = Long.parseLong((String)req.getAttributes().get("task"));
             }
-        } catch (UnsupportedEncodingException uee) { }
+        } catch (NumberFormatException nfe) {
+            throw new RestletException("'" + jobId + "' is not a valid job ID.", Status.CLIENT_ERROR_BAD_REQUEST);
+        }
         
         String formatExtension = (String) req.getAttributes().get("extension");
-        resp.setEntity(doGetInternal(taskIdent, formatExtension));
+        resp.setEntity(doGetInternal(jobId, formatExtension));
     }
     
     /** 
      * We separate out the internal to make unit testing easier
      * 
-     * @param taskIdent
+     * @param jobId
      * @param formatExtension
      * @return
      * @throws RestletException
      */
-    protected Representation doGetInternal(String taskIdent, String formatExtension) 
+    protected Representation doGetInternal(long jobId, String formatExtension) 
     throws RestletException {
         Object o = null;
-        if(taskIdent == null) {
-            o = taskDispatcher.getTaskList();
+        if(jobId == -1) {
+            try {
+                o = jobDispatcher.getJobList();
+            } catch (GeoWebCacheException gwce) {
+                throw new RestletException("Encountered error: " + gwce.getMessage(), 
+                        Status.SERVER_ERROR_INTERNAL, gwce);
+            }
         } else {
-            o = findTask(taskIdent);
+            o = findJob(jobId);
         }
         
         if(formatExtension.equalsIgnoreCase("xml")) {
@@ -140,7 +144,7 @@ public class TaskRestlet extends GWCRestlet {
     }
     
     /**
-     * POST overwrites an existing task
+     * POST overwrites an existing job
      * 
      * @param req
      * @param resp
@@ -153,7 +157,7 @@ public class TaskRestlet extends GWCRestlet {
     }
     
     /**
-     * PUT creates a new task
+     * PUT creates a new job
      * 
      * @param req
      * @param resp
@@ -166,7 +170,7 @@ public class TaskRestlet extends GWCRestlet {
     }
     
     /**
-     * DELETE removes (stops and deletes) an existing task
+     * DELETE removes (stops and deletes) an existing job
      * 
      * @param req
      * @param resp
@@ -174,48 +178,70 @@ public class TaskRestlet extends GWCRestlet {
      */
     private void doDelete(Request req, Response resp) 
     throws RestletException, GeoWebCacheException {
-        String taskIdent = (String) req.getAttributes().get("task");
-        GWCTask tl = findTask(taskIdent);
-        //TODO JIMG delete the task
-        taskDispatcher.reInit();
+        long jobId = -1;
+        
+        try {
+            jobId = Long.parseLong((String)req.getAttributes().get("task"));
+        } catch (NumberFormatException nfe) {
+            throw new RestletException("'" + jobId + "' is not a valid job ID.", Status.CLIENT_ERROR_BAD_REQUEST);
+        }
+        
+        if(jobId == -1) {
+            throw new RestletException("No valid job ID provided.", Status.CLIENT_ERROR_BAD_REQUEST);
+        }
+        
+        JobObject job = findJob(jobId);
+        
+        jobDispatcher.remove(jobId);
     }
     
-    
-    protected GWCTask deserializeAndCheckTask(Request req, Response resp, boolean isPut) 
+    protected JobObject deserializeAndCheckJob(Request req, Response resp, boolean isPut) 
     throws RestletException, IOException {
+
+        long jobId = -1;
+        
+        try {
+            jobId = Long.parseLong((String)req.getAttributes().get("task"));
+        } catch (NumberFormatException nfe) {
+            throw new RestletException("'" + jobId + "' is not a valid job ID.", Status.CLIENT_ERROR_BAD_REQUEST);
+        }
+        
+        if(jobId == -1) {
+            throw new RestletException("No valid job ID provided.", Status.CLIENT_ERROR_BAD_REQUEST);
+        }
+        
         // TODO UTF-8 may not always be right here
-        String taskIdent = ServletUtils.URLDecode((String) req.getAttributes().get("task"), "UTF-8");
         String formatExtension = (String) req.getAttributes().get("extension");
         InputStream is = req.getEntity().getStream();
         
-        // If appropriate, check whether this layer exists
+        // If appropriate, check whether this job exists
         if(!isPut) {
-            findTask(taskIdent);
+            findJob(jobId);
         }
         
-        return deserializeAndCheckTaskInternal(taskIdent, formatExtension, is);
+        return deserializeAndCheckJobInternal(jobId, formatExtension, is);
     }
     
     /**
      * We separate out the internal to make unit testing easier
      * 
-     * @param taskIdent
+     * @param jobId
      * @param formatExtension
      * @param is
      * @return
      * @throws RestletException
      * @throws IOException
      */
-    protected GWCTask deserializeAndCheckTaskInternal(
-            String taskIdent, String formatExtension, InputStream is) 
+    protected JobObject deserializeAndCheckJobInternal(
+            long jobId, String formatExtension, InputStream is) 
     throws RestletException, IOException {
         
-        XStream xs = xmlConfig.configureXStreamForTasks(new XStream(new DomDriver()));
+        XStream xs = xmlConfig.configureXStreamForJobs(new XStream(new DomDriver()));
 
-        GWCTask newTask = null;
+        JobObject newJob = null;
 
         if (formatExtension.equalsIgnoreCase("xml")) {
-            newTask = (GWCTask) xs.fromXML(is);
+            newJob = (JobObject) xs.fromXML(is);
         } else if (formatExtension.equalsIgnoreCase("json")) {
             HierarchicalStreamDriver driver = new JettisonMappedXmlDriver();
             HierarchicalStreamReader hsr = driver.createReader(is);
@@ -224,46 +250,46 @@ public class TaskRestlet extends GWCRestlet {
             new HierarchicalStreamCopier().copy(
                     hsr, new PrettyPrintWriter(writer));
             writer.close();
-            newTask = (GWCTask) xs.fromXML(writer.toString());
+            newJob = (JobObject) xs.fromXML(writer.toString());
         } else {
             throw new RestletException("Unknown or missing format extension: "
                     + formatExtension, Status.CLIENT_ERROR_BAD_REQUEST);
         }
 
-        if (newTask.getTaskId() != Long.parseLong(taskIdent)) {
+        if (newJob.getJobId() != jobId) {
             throw new RestletException(
                     "There is a mismatch between the ID of the "
-                    + " task in the submission and the URL you specified.",
+                    + " job in the submission and the URL you specified.",
                     Status.CLIENT_ERROR_BAD_REQUEST);
         }
 
-        return newTask;
+        return newJob;
     }
     
    
     /**
-     * Returns a XMLRepresentation of the layer
+     * Returns a XMLRepresentation of the job
      * 
-     * @param layer
+     * @param job
      * @return
      */
     public Representation getXMLRepresentation(Object o) {
-        XStream xs = xmlConfig.configureXStreamForTasks(new XStream());
+        XStream xs = xmlConfig.configureXStreamForJobs(new XStream());
         String xmlText = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + xs.toXML(o);
         
         return new StringRepresentation(xmlText, MediaType.TEXT_XML);
     }
 
     /**
-     * Returns a JsonRepresentation of the layer
+     * Returns a JsonRepresentation of the job
      * 
-     * @param layer
+     * @param job
      * @return
      */
     public JsonRepresentation getJsonRepresentation(Object o) {
         JsonRepresentation rep = null;
         try {
-            XStream xs = xmlConfig.configureXStreamForTasks(
+            XStream xs = xmlConfig.configureXStreamForJobs(
                     new XStream(new JsonHierarchicalStreamDriver()));
             JSONObject obj = new JSONObject(xs.toXML(o));
             rep = new JsonRepresentation(obj);
@@ -273,30 +299,30 @@ public class TaskRestlet extends GWCRestlet {
         return rep;
     }
     
-    protected GWCTask findTask(String taskIdent) {
-        if(taskIdent == null || taskIdent.length() == 0) {
-            throw new RestletException("Task not specified",
+    protected JobObject findJob(long jobId) {
+        if(jobId == -1) {
+            throw new RestletException("Job not specified",
                     Status.CLIENT_ERROR_BAD_REQUEST);
         }
         
-        GWCTask task = null;
+        JobObject job = null;
         try {
-            task = taskDispatcher.getTask(taskIdent);
+            job = jobDispatcher.getJob(jobId);
         } catch (GeoWebCacheException gwce) {
             throw new RestletException("Encountered error: " + gwce.getMessage(), 
-                    Status.SERVER_ERROR_INTERNAL);
+                    Status.SERVER_ERROR_INTERNAL, gwce);
         }
         
-        if(task == null) {
-            throw new RestletException("Uknown task: " + taskIdent, 
+        if(job == null) {
+            throw new RestletException("Uknown job: " + jobId, 
                     Status.CLIENT_ERROR_NOT_FOUND);
         }
         
-        return task;
+        return job;
     }
 
-    public void setTaskDispatcher(TaskDispatcher taskDispatcher) {
-        this.taskDispatcher = taskDispatcher;
+    public void setJobDispatcher(JobDispatcher jobDispatcher) {
+        this.jobDispatcher = jobDispatcher;
     }
     
     public void setXMLConfiguration(XMLConfiguration xmlConfig) {

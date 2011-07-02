@@ -1,4 +1,4 @@
-package org.geowebcache.storage.metastore.jdbc;
+package org.geowebcache.storage.jdbc;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -8,9 +8,9 @@ import java.sql.Statement;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-class JDBCUtils {
+public class JDBCUtils {
     private static Log log = LogFactory
-            .getLog(org.geowebcache.storage.metastore.jdbc.JDBCUtils.class);
+            .getLog(org.geowebcache.storage.jdbc.JDBCUtils.class);
 
     public static void close(Connection conn) {
         if (conn != null) {

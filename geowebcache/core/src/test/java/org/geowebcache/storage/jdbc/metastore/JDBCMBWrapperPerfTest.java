@@ -1,4 +1,4 @@
-package org.geowebcache.storage.metastore.jdbc;
+package org.geowebcache.storage.jdbc.metastore;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -16,6 +16,8 @@ import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.storage.TileObject;
 import org.geowebcache.util.FileUtils;
+
+import org.geowebcache.storage.jdbc.metastore.JDBCMBWrapper;
 
 public class JDBCMBWrapperPerfTest extends TestCase {
 

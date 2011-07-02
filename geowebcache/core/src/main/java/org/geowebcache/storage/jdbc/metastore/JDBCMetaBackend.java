@@ -15,7 +15,7 @@
  * @author Arne Kepp / The Open Planning Project 2009
  *  
  */
-package org.geowebcache.storage.metastore.jdbc;
+package org.geowebcache.storage.jdbc.metastore;
 
 import java.sql.SQLException;
 
@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
  */
 public class JDBCMetaBackend implements MetaStore {
     private static Log log = LogFactory
-            .getLog(org.geowebcache.storage.metastore.jdbc.JDBCMetaBackend.class);
+            .getLog(org.geowebcache.storage.jdbc.metastore.JDBCMetaBackend.class);
 
     /** Wrapper that sets everything up */
     private JDBCMBWrapper wrpr;

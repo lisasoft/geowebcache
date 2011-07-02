@@ -15,9 +15,9 @@
  * @author Arne Kepp / The Open Planning Project 2009
  *  
  */
-package org.geowebcache.storage.metastore.jdbc;
+package org.geowebcache.storage.jdbc.metastore;
 
-import static org.geowebcache.storage.metastore.jdbc.JDBCUtils.close;
+import static org.geowebcache.storage.jdbc.JDBCUtils.close;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,7 +35,7 @@ import org.geowebcache.storage.StorageException;
 
 class JDBCMBIdCache {
     private static Log log = LogFactory
-            .getLog(org.geowebcache.storage.metastore.jdbc.JDBCMBIdCache.class);
+            .getLog(org.geowebcache.storage.jdbc.metastore.JDBCMBIdCache.class);
 
     public static int MAX_FORMATS = 50;
 
