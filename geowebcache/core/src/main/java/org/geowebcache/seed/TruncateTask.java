@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.filter.request.RequestFilter;
 import org.geowebcache.layer.TileLayer;
+import org.geowebcache.storage.JobLogObject;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
 
@@ -63,6 +64,7 @@ public class TruncateTask extends GWCTask {
             e.printStackTrace();
             super.state = GWCTask.STATE.DEAD;
             log.error("During truncate request: " + e.getMessage());
+            addLog(JobLogObject.createErrorLog(jobId, e));
         }
 
         checkInterrupted();
@@ -76,6 +78,14 @@ public class TruncateTask extends GWCTask {
         }
     }
 
+    protected void doAbnormalExit(Throwable t) {
+        String logMsg = "Thread " + Thread.currentThread().getName() + " was terminated due to the following exception:\n";
+        logMsg += t.getClass().getName() + " + : " + t.getMessage();
+        log.info(logMsg);
+        addLog(JobLogObject.createErrorLog(jobId, "Seeding Terminated Abnormally", logMsg));
+        super.state = GWCTask.STATE.DEAD;
+    }
+    
     /**
      * Updates any request filters
      */
