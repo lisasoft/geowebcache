@@ -7,21 +7,127 @@ Ext.require([
 
 Ext.BLANK_IMAGE_URL = 'images/s.gif';
 
-Ext.Loader.onReady(function() {
+var joblist = null;
+var gwc = null;
+
+var showLogs = function (jobId) {
+	var logGrid = Ext.create('GWC.JobLogGrid');
+	logGrid.jobId = jobId;
+	logGrid.refreshLogs();
+    var logWindow = Ext.create('widget.window', {
+        width: 800,
+        height: 600,
+        title: 'Logs for job ' + jobId,
+        closable: true,
+        plain: true,
+        layout: 'fit',
+        modal: true,
+        tools: [{
+            type:'refresh',
+            tooltip: 'Refresh Logs',
+            // hidden:true,
+            handler: function(event, toolEl, panel){
+        		logGrid.refreshLogs();
+            }
+        }],
+        items: [logGrid]
+	});
+	logWindow.show();	
+};
+
+var showHelp = function () {
+    var helpWindow = Ext.create('widget.window', {
+        width: 800,
+        height: 400,
+        title: 'Job Manager Help',
+        closable: true,
+        plain: true,
+        layout: 'fit',
+        items: []
+	});
+	helpWindow.show();	
+};
+
+var setupMenu = function () {
+	var viewLogsAction = Ext.create('Ext.Action', {
+	    icon: 'images/logs.png', 
+	    text: 'View Logs',
+	    disabled: false,
+	    handler: function(widget, event) {
+			var rec = joblist.getSelectionModel().getSelection()[0];
+			if (rec) {
+				showLogs(rec.data.jobId);
+			}
+		}
+	});
+
+	var stopAction = Ext.create('Ext.Action', {
+	    icon: 'images/stop.png', 
+	    text: 'Stop Job',
+	    disabled: true,
+	    handler: function(widget, event) {
+//	        var rec = grid.getSelectionModel().getSelection()[0];
+//	        if (rec) {
+//	            alert("Sell " + rec.get('company'));
+//	        } else {
+//	            alert('Please select a company from the grid');
+//	        }
+			alert("stop");
+	    }
+	});
+	
+	var deleteAction = Ext.create('Ext.Action', {
+	    icon: 'images/delete.png', 
+	    text: 'Delete Job',
+	    disabled: true,
+	    handler: function(widget, event) {
+			var rec = joblist.getSelectionModel().getSelection()[0];
+			if (rec) {
+				gwc.getJobStore().remove(rec);
+				gwc.deleteJob(rec.data.jobId);
+			}
+	    }
+	});
+
+	return Ext.create('Ext.menu.Menu', {
+	    items: [
+	        viewLogsAction,
+	        stopAction,
+	        deleteAction
+	    ]
+	});
+};
+
+Ext.Loader.onReady(function () {
     
 	Ext.define('GWC.JobGrid', {
 		extend: 'Ext.grid.Panel',
-		initComponent : function() {
+		initComponent : function () {
 	        this.jobTemplate = loadTemplate('Job Title', 'js/gwc/jobtemplate.html');
 	        this.regionTemplate = loadTemplate('Region', 'js/gwc/regiontemplate.html');
 	        this.title = 'Job List';
 	        this.store = gwc.getJobStore();
-	        this.disableSelection = true;
+	        this.disableSelection = false;
 	        this.loadMask = true;
 	        this.viewConfig = {
 	            id: 'gv',
 	            trackOver: false,
-	            stripeRows: true
+	            stripeRows: true,
+	            listeners: {
+                	itemcontextmenu: function (view, rec, node, index, e) {
+	        			var contextMenu = setupMenu();
+                    	e.stopEvent();
+                		contextMenu.items.get(1).disabled = (rec.data.state != "RUNNING" || rec.data.jobType == "TRUNCATE");
+                		contextMenu.items.get(2).disabled = (rec.data.state == "RUNNING");
+                		if(rec.hasntRunYet()) {
+                			contextMenu.items.get(2).text = "Cancel";
+                		} else {
+                			contextMenu.items.get(2).text = "Delete";
+                		}
+                    	contextMenu.showAt(e.getXY());
+                    	return false;
+                	}
+	        	}
 	        };
 
 	        this.columns = [{
@@ -112,6 +218,7 @@ Ext.Loader.onReady(function() {
 	        this.viewConfig = {
 	            id: 'lv',
 	            trackOver: false,
+	            layout: 'fit',
 	            stripeRows: true
 	        };
 
@@ -141,70 +248,51 @@ Ext.Loader.onReady(function() {
 	        this.callParent();
 		},
 	    
-		refreshLogs : function() {
-			gwc.getLogs(this.jobId);
+		refreshLogs : function () {
+			gwc.loadLogs(this.jobId);
 	    }
 	});
 
 });
-	
-showLogs = function(jobId) {
-	logGrid = Ext.create('GWC.JobLogGrid');
-	logGrid.jobId = jobId;
-	logGrid.refreshLogs();
-    logWindow = Ext.create('widget.window', {
-        width: 800,
-        height: 600,
-        title: 'Logs for job ' + jobId,
-        closable: true,
-        plain: true,
-        layout: 'fit',
-        modal: true,
-        tools: [{
-            type:'refresh',
-            tooltip: 'Refresh Logs',
-            // hidden:true,
-            handler: function(event, toolEl, panel){
-        		logGrid.refreshLogs();
-            }
-        }],
-        items: [logGrid]
-	});
-	logWindow.show();	
-}
 
-showHelp = function() {
-    helpWindow = Ext.create('widget.window', {
-        width: 800,
-        height: 400,
-        title: 'Job Manager Help',
-        closable: true,
-        plain: true,
-        layout: 'fit',
-        items: []
-	});
-	helpWindow.show();	
-}
-
-Ext.onReady(function() {
+Ext.onReady(function () {
 	gwc = Ext.create('GWC.RestService');
 	joblist = new GWC.JobGrid({
         tools: [{
             type:'refresh',
             tooltip: 'Refresh Job List',
-            // hidden:true,
             handler: function(event, toolEl, panel){
         		gwc.loadJobs();
             }
-        },
-        {
+        },{
             type:'help',
             tooltip: 'Get Help',
             handler: function(event, toolEl, panel){
         		showHelp();
             }
-        }],
-	    renderTo: 'joblist'
+        }]
 	});
+
+	Ext.create('Ext.container.Viewport', {
+	    layout: 'border',
+	    renderTo: Ext.getBody(),
+	    items: [{
+	    	region: 'north',
+		    border: 0,
+	        xtype: 'panel',
+	        items: {
+	            html: '<a id="logo" href="home"><img src="rest/web/geowebcache_logo.png"height="70" width="247" border="0"/></a>'
+	    	}
+        },{
+	    	region: 'center',
+		    border: 0,
+	        layout: 'fit',
+	        xtype: 'panel',
+	        items: [
+	            joblist
+	    	]
+	    }]
+	});
+	
 	gwc.loadJobs();
 });

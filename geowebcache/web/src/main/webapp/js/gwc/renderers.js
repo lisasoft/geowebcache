@@ -1,6 +1,6 @@
 /* renderers for various columns of the grid */
-renderState = function(value, p, record) {
-	state_img = 'state_gray.png'; // UNSET
+var renderState = function (value, p, record) {
+	var state_img = 'state_gray.png'; // UNSET
 	
 	if(record.data.state == 'READY') {
 		state_img = 'state_lightgreen.png';
@@ -31,22 +31,16 @@ renderState = function(value, p, record) {
     );
 };
 
-renderJob = function(value, p, record) {
-	jobType = "";
+var renderJob = function (value, p, record) {
+	var jobType = "";
 	if(record.data.reseed && record.data.jobType == "SEED") {
 		jobType = "RESEED";
 	} else {
 		jobType = record.data.jobType;
 	}
 	
-	errorInfo = "";
-	if(record.data.errorCount + record.data.warnCount == 0) {
-		if(record.data.state == 'RUNNING') {
-			errorInfo = "running smoothly";
-		} else if(record.data.state != 'UNSET' && record.data.state != 'READY') {
-			errorInfo = "view logs";
-		}
-	} else {
+	var errorInfo = "";
+	if(record.data.errorCount + record.data.warnCount != 0) {
 		if(record.data.errorCount > 0) {
 			errorInfo = "<img style=\"border: 0\" src=\"images/error.png\" title=\"Errors: " + record.data.errorCount + "\"/>";
 		}
@@ -66,7 +60,7 @@ renderJob = function(value, p, record) {
     );
 };
 
-renderRegion = function(value, p, record) {
+var renderRegion = function (value, p, record) {
     return Ext.String.format(
     	this.regionTemplate,
     	record.data.zoomStart,
@@ -76,7 +70,7 @@ renderRegion = function(value, p, record) {
     );
 };
 
-renderTime = function(value, p, record) {
+var renderTime = function (value, p, record) {
 	if(record.data.state == 'RUNNING') {
 		if(record.data.timeSpent == -1 || record.data.timeRemaining == -1) {
 			return "unknown";
@@ -99,7 +93,7 @@ renderTime = function(value, p, record) {
 	}
 };
 
-renderTileCounts = function(value, p, record) {
+var renderTileCounts = function (value, p, record) {
 	if(record.data.jobType == 'TRUNCATE') {
 		return "-";
 	} else if(record.data.tilesDone == -1 || record.data.tilesTotal == -1) {
@@ -114,8 +108,8 @@ renderTileCounts = function(value, p, record) {
 	}
 };
 
-renderSchedule = function(value, p, record) {
-	if(record.data.runOnce) {
+var renderSchedule = function (value, p, record) {
+	if(record.data.runOnce && record.data.schedule) {
 		return Ext.String.format(
 		    	"{0}<br />(once)",
 		        record.data.schedule
@@ -125,7 +119,7 @@ renderSchedule = function(value, p, record) {
 	}
 };
 
-renderThroughput = function(value, p, record) {
+var renderThroughput = function (value, p, record) {
 	// alert(record.data.throughput);
 	if(record.data.jobType == 'TRUNCATE') {
 		return "-";
@@ -134,7 +128,7 @@ renderThroughput = function(value, p, record) {
 		if(record.data.throughput == 0.0) {
 			result = "";
 		} else {
-			tput = Ext.Number.toFixed(record.data.throughput, 1);
+			var tput = Ext.Number.toFixed(record.data.throughput, 1);
 			result = tput + " / sec";
 		}
 		if(record.data.maxThroughput != -1) {
@@ -150,7 +144,7 @@ renderThroughput = function(value, p, record) {
 	}
 };
 
-renderLogLevel = function(value, p, record) {
+var renderLogLevel = function (value, p, record) {
 	var imageFile = "information.png";
 	if(record.data.logLevel == 'ERROR') {
 		imageFile = "error.png";
