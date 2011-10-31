@@ -452,7 +452,7 @@ public class XMLConfiguration implements Configuration {
 
         xs.alias("gridSet", XMLGridSet.class);
         xs.alias("gridSubset", XMLGridSubset.class);
-
+        
         xs.alias("mimeFormats", new ArrayList<String>().getClass());
         xs.alias("formatModifiers", new ArrayList<FormatModifier>().getClass());
         xs.alias("srs", org.geowebcache.grid.SRS.class);
