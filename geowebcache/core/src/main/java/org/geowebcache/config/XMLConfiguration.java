@@ -35,10 +35,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -71,9 +71,6 @@ import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridSet;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.grid.SRS;
-import org.geowebcache.grid.XMLGridSet;
-import org.geowebcache.grid.XMLGridSubset;
-import org.geowebcache.grid.XMLOldGrid;
 import org.geowebcache.layer.ExpirationRule;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.meta.ContactInformation;
@@ -110,6 +107,10 @@ import com.thoughtworks.xstream.io.xml.DomReader;
 
 /**
  * XMLConfiguration class responsible for reading/writing layer configurations to and from XML file
+ * <p>
+ * NOTE {@link #initialize(GridSetBroker)} MUST have been called before any other method is used,
+ * otherwise this configuration is in an inconsistent and unpredictable state.
+ * </p>
  */
 public class XMLConfiguration implements Configuration {
 
@@ -122,11 +123,6 @@ public class XMLConfiguration implements Configuration {
      * {@link #XMLConfiguration(File)} constructor
      */
     private final WebApplicationContext context;
-
-    /**
-     * Set by {@link #initialize(GridSetBroker)}
-     */
-    private GridSetBroker gridSetBroker;
 
     /**
      * Location of the configuration file
@@ -144,6 +140,8 @@ public class XMLConfiguration implements Configuration {
 
     private String templateLocation;
 
+    private GridSetBroker gridSetBroker;
+
     /**
      * @deprecated use {@link #XMLConfiguration(ApplicationContextProvider, DefaultStorageFinder)}
      */
@@ -159,16 +157,19 @@ public class XMLConfiguration implements Configuration {
      * {@code storageDirFinder}
      * 
      * @param appCtx
+     *            use to lookup {@link XMLConfigurationProvider} extenions, may be {@code null}
      * @param defaultStorage
      * @throws ConfigurationException
      */
     public XMLConfiguration(final ApplicationContextProvider appCtx,
             final DefaultStorageFinder storageDirFinder) throws ConfigurationException {
 
-        Assert.notNull(appCtx);
         Assert.notNull(storageDirFinder);
 
-        this.context = appCtx.getApplicationContext();
+        if (appCtx == null) {
+            log.warn("No application context provider given, configuration extensions won't be available");
+        }
+        this.context = appCtx == null ? null : appCtx.getApplicationContext();
         this.configFileName = DEFAULT_CONFIGURATION_FILE_NAME;
         this.configDirectory = new File(storageDirFinder.getDefaultPath());
         this.templateLocation = "/" + DEFAULT_CONFIGURATION_FILE_NAME;
@@ -197,10 +198,11 @@ public class XMLConfiguration implements Configuration {
     public XMLConfiguration(final ApplicationContextProvider appCtx,
             final String configFileDirectory) throws ConfigurationException {
 
-        Assert.notNull(appCtx);
         Assert.notNull(configFileDirectory);
-
-        this.context = appCtx.getApplicationContext();
+        if (appCtx == null) {
+            log.warn("No application context provider given, configuration extensions won't be available");
+        }
+        this.context = appCtx == null ? null : appCtx.getApplicationContext();
         this.configFileName = DEFAULT_CONFIGURATION_FILE_NAME;
         this.templateLocation = "/" + DEFAULT_CONFIGURATION_FILE_NAME;
 
@@ -227,7 +229,6 @@ public class XMLConfiguration implements Configuration {
 
         this.configDirectory = null;
         this.configFileName = null;
-        this.gridSetBroker = new GridSetBroker(true, false);
         this.context = null;
         this.templateLocation = "/" + DEFAULT_CONFIGURATION_FILE_NAME;
 
@@ -250,7 +251,12 @@ public class XMLConfiguration implements Configuration {
         this.templateLocation = templateLocation;
     }
 
-    private File findConfFile() throws ConfigurationException {
+    private File findOrCreateConfFile() throws ConfigurationException {
+        if (null == configDirectory) {
+            // used the InputStream constructor
+            throw new IllegalStateException();
+        }
+
         if (!configDirectory.exists()) {
             throw new ConfigurationException("Configuration directory does not exist: '"
                     + configDirectory.getAbsolutePath() + "'");
@@ -293,10 +299,10 @@ public class XMLConfiguration implements Configuration {
     }
 
     public boolean isRuntimeStatsEnabled() {
-        if (gwcConfig == null || gwcConfig.runtimeStats == null) {
+        if (gwcConfig == null || gwcConfig.getRuntimeStats() == null) {
             return true;
         } else {
-            return gwcConfig.runtimeStats;
+            return gwcConfig.getRuntimeStats();
         }
     }
 
@@ -316,35 +322,31 @@ public class XMLConfiguration implements Configuration {
         }
     }
 
-    public synchronized ServiceInformation getServiceInformation() throws GeoWebCacheException {
-        if (this.gwcConfig == null) {
-            return null;
-        }
-
-        return gwcConfig.serviceInformation;
+    public synchronized ServiceInformation getServiceInformation() {
+        return gwcConfig.getServiceInformation();
     }
 
     private void setDefaultValues(TileLayer layer) {
         // Additional values that can have defaults set
         if (layer.isCacheBypassAllowed() == null) {
-            if (gwcConfig.cacheBypassAllowed != null) {
-                layer.setCacheBypassAllowed(gwcConfig.cacheBypassAllowed);
+            if (gwcConfig.getCacheBypassAllowed() != null) {
+                layer.setCacheBypassAllowed(gwcConfig.getCacheBypassAllowed());
             } else {
                 layer.setCacheBypassAllowed(false);
             }
         }
 
         if (layer.getBackendTimeout() == null) {
-            if (gwcConfig.backendTimeout != null) {
-                layer.setBackendTimeout(gwcConfig.backendTimeout);
+            if (gwcConfig.getBackendTimeout() != null) {
+                layer.setBackendTimeout(gwcConfig.getBackendTimeout());
             } else {
                 layer.setBackendTimeout(120);
             }
         }
 
         if (layer.getFormatModifiers() == null) {
-            if (gwcConfig.formatModifiers != null) {
-                layer.setFormatModifiers(gwcConfig.formatModifiers);
+            if (gwcConfig.getFormatModifiers() != null) {
+                layer.setFormatModifiers(gwcConfig.getFormatModifiers());
             }
         }
 
@@ -353,8 +355,8 @@ public class XMLConfiguration implements Configuration {
 
             URL proxyUrl = null;
             try {
-                if (gwcConfig.proxyUrl != null) {
-                    proxyUrl = new URL(gwcConfig.proxyUrl);
+                if (gwcConfig.getProxyUrl() != null) {
+                    proxyUrl = new URL(gwcConfig.getProxyUrl());
                     log.debug("Using proxy " + proxyUrl.getHost() + ":" + proxyUrl.getPort());
                 } else if (wl.getProxyUrl() != null) {
                     proxyUrl = new URL(wl.getProxyUrl());
@@ -372,9 +374,9 @@ public class XMLConfiguration implements Configuration {
                         proxyUrl);
                 log.debug("Using per-layer HTTP credentials for " + wl.getName() + ", "
                         + "username " + wl.getHttpUsername());
-            } else if (gwcConfig.httpUsername != null) {
-                sourceHelper = new WMSHttpHelper(gwcConfig.httpUsername, gwcConfig.httpPassword,
-                        proxyUrl);
+            } else if (gwcConfig.getHttpUsername() != null) {
+                sourceHelper = new WMSHttpHelper(gwcConfig.getHttpUsername(),
+                        gwcConfig.getHttpPassword(), proxyUrl);
                 log.debug("Using global HTTP credentials for " + wl.getName());
             } else {
                 sourceHelper = new WMSHttpHelper(null, null, proxyUrl);
@@ -386,7 +388,7 @@ public class XMLConfiguration implements Configuration {
     }
 
     private GeoWebCacheConfiguration loadConfiguration() throws ConfigurationException {
-        File xmlFile = findConfFile();
+        File xmlFile = findOrCreateConfFile();
         Assert.notNull(xmlFile);
         GeoWebCacheConfiguration config = loadConfiguration(xmlFile);
         return config;
@@ -414,12 +416,25 @@ public class XMLConfiguration implements Configuration {
 
         GeoWebCacheConfiguration config;
         config = (GeoWebCacheConfiguration) xs.unmarshal(new DomReader((Element) rootNode));
-        config.init();
         return config;
     }
 
-    private void writeConfiguration() throws GeoWebCacheException {
-        File xmlFile = findConfFile();
+    /**
+     * @see org.geowebcache.config.Configuration#save()
+     */
+    public synchronized void save() throws IOException {
+        File xmlFile;
+        try {
+            xmlFile = findOrCreateConfFile();
+        } catch (IllegalStateException e) {
+            // ignore, used the InputStream constructor
+            return;
+        } catch (ConfigurationException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            }
+            throw (IOException) new IOException(e.getMessage()).initCause(e);
+        }
         persistToFile(xmlFile);
     }
 
@@ -609,8 +624,7 @@ public class XMLConfiguration implements Configuration {
      * 
      * throws an exception if it does not succeed
      */
-
-    protected void persistToFile(File xmlFile) throws GeoWebCacheException {
+    private void persistToFile(File xmlFile) throws IOException {
         // create the XStream for serializing the configuration
         XStream xs = configureXStreamForLayers(new XStream());
 
@@ -619,68 +633,85 @@ public class XMLConfiguration implements Configuration {
             writer = new OutputStreamWriter(new FileOutputStream(xmlFile), "UTF-8");
         } catch (UnsupportedEncodingException uee) {
             uee.printStackTrace();
-            throw new GeoWebCacheException(uee.getMessage());
+            throw new IOException(uee.getMessage());
         } catch (FileNotFoundException fnfe) {
-            throw new GeoWebCacheException(fnfe.getMessage());
+            throw fnfe;
         }
 
         try {
             writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
             xs.toXML(gwcConfig, writer);
         } catch (IOException e) {
-            e.printStackTrace();
-            throw new GeoWebCacheException("Error writing to " + xmlFile.getAbsolutePath() + ": "
-                    + e.getMessage());
+            throw (IOException) new IOException("Error writing to " + xmlFile.getAbsolutePath()
+                    + ": " + e.getMessage()).initCause(e);
         }
 
         log.info("Wrote configuration to " + xmlFile.getAbsolutePath());
     }
 
     /**
-     * Method responsible for modifying an existing layer.
-     * 
-     * @param currentLayer
-     *            the name of the layer to be modified
      * @param tl
-     *            the new layer to overwrite the existing layer
-     * @return true if operation succeeded, false otherwise
+     *            the layer to add to this configuration
+     * @return
+     * @throws GeoWebCacheException
+     *             if a layer named the same than {@code tl} already exists
      */
-
-    public boolean modifyLayer(TileLayer tl) throws GeoWebCacheException {
-        // tl.setCacheFactory(cacheFactory);
-        boolean response = gwcConfig.replaceLayer(tl);
-
-        if (response) {
-            writeConfiguration();
+    public synchronized void addLayer(TileLayer tl) throws GeoWebCacheException {
+        if (null != getTileLayer(tl.getName())) {
+            throw new GeoWebCacheException("Layer " + tl.getName() + " already exists");
         }
-        return response;
-    }
 
-    public boolean addLayer(TileLayer tl) throws GeoWebCacheException {
-        // tl.setCacheFactory(cacheFactory);
-
-        boolean response = gwcConfig.addLayer(tl);
-
-        if (response) {
-            writeConfiguration();
-        }
-        return response;
+        initialize(tl);
+        gwcConfig.getLayers().add(tl);
+        updateLayers();
     }
 
     /**
-     * Method responsible for deleting existing layers
+     * Method responsible for modifying an existing layer.
      * 
-     * @param layerName
-     *            the name of the layer to be deleted
-     * @return true if operation succeeded, false otherwise
+     * @param tl
+     *            the new layer to overwrite the existing layer
+     * @throws NoSuchElementException
+     * @see org.geowebcache.config.Configuration#modifyLayer(org.geowebcache.layer.TileLayer)
      */
-    public boolean deleteLayer(TileLayer layer) throws GeoWebCacheException {
-        boolean response = gwcConfig.removeLayer(layer);
-
-        if (response) {
-            writeConfiguration();
+    public synchronized void modifyLayer(TileLayer tl) throws NoSuchElementException {
+        TileLayer previous = getTileLayer(tl.getName());
+        if (null == previous) {
+            throw new NoSuchElementException("Layer " + tl.getName() + " does not exist");
         }
-        return response;
+
+        gwcConfig.getLayers().remove(previous);
+        initialize(tl);
+        gwcConfig.getLayers().add(tl);
+        updateLayers();
+    }
+
+    /**
+     * @return {@code true} if the layer was removed, {@code false} if no such layer exists
+     * @see org.geowebcache.config.Configuration#removeLayer(java.lang.String)
+     */
+    public synchronized boolean removeLayer(final String layerName) {
+        final TileLayer tileLayer = getTileLayer(layerName);
+        if (tileLayer == null) {
+            return false;
+        }
+
+        boolean removed = false;
+        tileLayer.acquireLayerLock();
+        try {
+            removed = gwcConfig.getLayers().remove(tileLayer);
+            if (removed) {
+                updateLayers();
+            }
+        } finally {
+            tileLayer.releaseLayerLock();
+        }
+        return removed;
+    }
+
+    public synchronized void addGridSet(final GridSet gridset) throws GeoWebCacheException {
+        XMLGridSet xmlGridset = new XMLGridSet(gridset);
+        gwcConfig.getGridSets().add(xmlGridset);
     }
 
     /**
@@ -844,6 +875,69 @@ public class XMLConfiguration implements Configuration {
     }
 
     /**
+     * @see org.geowebcache.config.Configuration#initialize(org.geowebcache.grid.GridSetBroker)
+     */
+    public int initialize(final GridSetBroker gridSetBroker) throws GeoWebCacheException {
+        
+        this.gridSetBroker = gridSetBroker;
+
+        if (this.configFileName != null) {
+            this.gwcConfig = loadConfiguration();
+        }
+
+        log.info("Initializing GridSets from " + getIdentifier());
+
+        contributeGridSets(gridSetBroker);
+
+        log.info("Initializing layers from " + getIdentifier());
+
+        // Loop over the layers and set appropriate values
+        for (TileLayer layer : gwcConfig.getLayers()) {
+            if (layer == null) {
+                throw new IllegalStateException(getIdentifier() + " contains a null layer");
+            }
+            initialize(layer);
+        }
+
+        updateLayers();
+
+        return getTileLayerCount();
+    }
+
+    private void updateLayers() {
+        Map<String, TileLayer> buff = new HashMap<String, TileLayer>();
+        for (TileLayer layer : gwcConfig.getLayers()) {
+            buff.put(layer.getName(), layer);
+        }
+        this.layers = buff;
+    }
+
+    private void contributeGridSets(final GridSetBroker gridSetBroker) {
+        if (gwcConfig.getGridSets() != null) {
+            Iterator<XMLGridSet> iter = gwcConfig.getGridSets().iterator();
+            while (iter.hasNext()) {
+                XMLGridSet xmlGridSet = iter.next();
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Reading " + xmlGridSet.getName());
+                }
+
+                GridSet gridSet = xmlGridSet.makeGridSet();
+
+                log.info("Read GridSet " + gridSet.getName());
+
+                gridSetBroker.put(gridSet);
+            }
+        }
+    }
+
+    private void initialize(final TileLayer layer) {
+        log.info("Initializing TileLayer '" + layer.getName() + "'");
+        setDefaultValues(layer);
+        layer.initialize(gridSetBroker);
+    }
+
+    /**
      * @see org.geowebcache.config.Configuration#getIdentifier()
      */
     public String getIdentifier() {
@@ -865,67 +959,10 @@ public class XMLConfiguration implements Configuration {
     }
 
     /**
-     * @see org.geowebcache.config.Configuration#initialize(org.geowebcache.grid.GridSetBroker)
-     */
-    public int initialize(final GridSetBroker gridSetBroker) throws GeoWebCacheException {
-        this.gridSetBroker = gridSetBroker;
-
-        if (this.configFileName != null) {
-            this.gwcConfig = loadConfiguration();
-        }
-
-        if (gwcConfig.gridSets != null) {
-            Iterator<XMLGridSet> iter = gwcConfig.gridSets.iterator();
-            while (iter.hasNext()) {
-                XMLGridSet xmlGridSet = iter.next();
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Reading " + xmlGridSet.getName());
-                }
-
-                GridSet gridSet = xmlGridSet.makeGridSet();
-
-                log.info("Read GridSet " + gridSet.getName());
-
-                gridSetBroker.put(gridSet);
-            }
-        }
-
-        // Loop over the layers and set appropriate values
-        if (gwcConfig.layers != null) {
-            Iterator<TileLayer> iter = gwcConfig.layers.iterator();
-
-            while (iter.hasNext()) {
-                TileLayer layer = iter.next();
-                setDefaultValues(layer);
-            }
-        }
-
-        // This is used by reload as well
-        this.layers = new HashMap<String, TileLayer>();
-        List<TileLayer> configLayers = getTileLayers();
-        log.info("Adding layers from " + getIdentifier());
-        for (TileLayer layer : configLayers) {
-            if (layer == null) {
-                log.error("layer was null");
-                continue;
-            }
-            log.info("Initializing TileLayer '" + layer.getName() + "'");
-            layer.initialize(gridSetBroker);
-            layers.put(layer.getName(), layer);
-        }
-        return getTileLayerCount();
-    }
-
-    /**
      * @see org.geowebcache.config.Configuration#getTileLayers()
      */
-    public List<TileLayer> getTileLayers() throws GeoWebCacheException {
-        List<TileLayer> layers = Collections.emptyList();
-        if (gwcConfig != null && gwcConfig.layers != null) {
-            layers = gwcConfig.layers;
-        }
-        return layers;
+    public List<TileLayer> getTileLayers() {
+        return Collections.unmodifiableList(gwcConfig.getLayers());
     }
 
     /**
@@ -946,34 +983,8 @@ public class XMLConfiguration implements Configuration {
      * @see org.geowebcache.config.Configuration#getTileLayerNames()
      */
     public Set<String> getTileLayerNames() {
-        Set<String> names = new HashSet<String>();
-        try {
-            for (TileLayer tl : getTileLayers()) {
-                names.add(tl.getName());
-            }
-        } catch (GeoWebCacheException e) {
-            throw new RuntimeException(e);
-        }
+        Set<String> names = Collections.unmodifiableSet(this.layers.keySet());
         return names;
     }
 
-    public boolean remove(String layerName) {
-        TileLayer tileLayer = getTileLayer(layerName);
-        if (tileLayer == null) {
-            return false;
-        }
-        boolean removed = false;
-        tileLayer.acquireLayerLock();
-        try {
-            removed = gwcConfig.removeLayer(tileLayer);
-            if (removed) {
-                Map<String, TileLayer> buff = new HashMap<String, TileLayer>(this.layers);
-                buff.remove(layerName);
-                this.layers = buff;
-            }
-        } finally {
-            tileLayer.releaseLayerLock();
-        }
-        return removed;
-    }
 }
