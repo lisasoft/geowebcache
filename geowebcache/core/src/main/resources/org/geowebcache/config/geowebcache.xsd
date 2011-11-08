@@ -66,7 +66,7 @@
     				GeoWebCache.
           </xs:annotation>
         </xs:element>
-        <xs:element name="serviceInformation" type="gwc:serviceInformationType" maxOccurs="1" minOccurs="0">
+        <xs:element name="serviceInformation" type="gwc:ServiceInformationType" maxOccurs="1" minOccurs="0">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               Service information such as you or your company's
@@ -133,7 +133,7 @@
           </xs:annotation>
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="gridSet" type="gwc:gridSet" minOccurs="0" maxOccurs="unbounded" />
+              <xs:element name="gridSet" type="gwc:GridSet" minOccurs="0" maxOccurs="unbounded" />
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -146,7 +146,7 @@
           </xs:annotation>
           <xs:complexType>
             <xs:choice minOccurs="0" maxOccurs="unbounded">
-              <xs:element name="wmsLayer" type="gwc:wmsLayer" />
+              <xs:element name="wmsLayer" type="gwc:WmsLayer" />
               <xs:element ref="gwc:arcgisLayer" />
             </xs:choice>
           </xs:complexType>
@@ -155,7 +155,7 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:complexType name="wmsLayer">
+  <xs:complexType name="WmsLayer">
     <xs:sequence>
       <xs:element name="enabled" type="xs:boolean" minOccurs="0">
         <xs:annotation>
@@ -178,7 +178,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="metaInformation" type="gwc:layerMetaInformation" minOccurs="0">
+      <xs:element name="metaInformation" type="gwc:LayerMetaInformation" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             Meta information like a title and description intended for human
@@ -186,7 +186,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="mimeFormats" type="gwc:mimeFormats" minOccurs="0">
+      <xs:element name="mimeFormats" type="gwc:MimeFormats" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             List of formats to be supported. These must be known to
@@ -215,7 +215,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="gridSubsets" type="gwc:gridSubsets" minOccurs="0">
+      <xs:element name="gridSubsets" type="gwc:GridSubsets" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The grid definitions contain information about the SRS, the
@@ -224,7 +224,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="updateSources" type="gwc:updateSources" minOccurs="0">
+      <xs:element name="updateSources" type="gwc:UpdateSources" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             (1.2.2) Update sources provide information about when tiles should
@@ -233,7 +233,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="requestFilters" type="gwc:requestFilters" minOccurs="0">
+      <xs:element name="requestFilters" type="gwc:RequestFilters" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             Request filters are applied to all requests and make it possible
@@ -258,7 +258,7 @@
         </xs:annotation>
       </xs:element>
       <!-- WMS Specific stuff, some of which is not really WMS specific -->
-      <xs:element name="wmsUrl" type="gwc:wmsUrl" minOccurs="0">
+      <xs:element name="wmsUrl" type="gwc:WmsUrl" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of URLs to backend servers than can render tiles for this
@@ -290,7 +290,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="metaWidthHeight" type="gwc:metaWidthHeight" minOccurs="0">
+      <xs:element name="metaWidthHeight" type="gwc:MetaWidthHeight" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The metatiling factors used for this layer. These are used to
@@ -432,7 +432,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="expireCacheList" type="gwc:expireList" minOccurs="0">
+      <xs:element name="expireCacheList" type="gwc:ExpireList" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of expiration rules, so that cache expiration can be
@@ -462,7 +462,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="expireClientsList" type="gwc:expireList" minOccurs="0">
+      <xs:element name="expireClientsList" type="gwc:ExpireList" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of expiration rules, so that client expiration (set through
@@ -500,7 +500,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="parameterFilters" type="gwc:parameterFilters" minOccurs="0">
+      <xs:element name="parameterFilters" type="gwc:ParameterFilters" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of parameter filters, meaning parameters the client may
@@ -600,13 +600,13 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="mimeFormats">
+  <xs:complexType name="MimeFormats">
     <xs:sequence>
       <xs:element name="string" type="xs:string" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="srs">
+  <xs:complexType name="Srs">
     <xs:sequence>
       <xs:element name="number" type="xs:integer">
         <xs:annotation>
@@ -618,13 +618,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="gridSets">
-    <xs:sequence>
-      <xs:element name="gridSet" type="gwc:gridSet" minOccurs="1" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:complexType>
-
-  <xs:complexType name="gridSet">
+  <xs:complexType name="GridSet">
     <xs:sequence>
       <xs:element name="name" type="xs:string">
         <xs:annotation>
@@ -633,8 +627,15 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="srs" type="gwc:srs" />
-      <xs:element name="extent" type="gwc:bounds">
+      <xs:element name="description" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            A description of the gridset
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="srs" type="gwc:Srs" />
+      <xs:element name="extent" type="gwc:Bounds">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The extent of the grid. This should generally be the biggest
@@ -671,7 +672,7 @@
         </xs:annotation>
       </xs:element>
       <xs:choice minOccurs="0" maxOccurs="1">
-        <xs:element name="resolutions" type="gwc:doubleList" minOccurs="0">
+        <xs:element name="resolutions" type="gwc:DoubleList" minOccurs="0">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               You can either specify an array of resolutions in descending
@@ -688,7 +689,7 @@
             </xs:documentation>
           </xs:annotation>
         </xs:element>
-        <xs:element name="scaleDenominators" type="gwc:doubleList" minOccurs="0">
+        <xs:element name="scaleDenominators" type="gwc:DoubleList" minOccurs="0">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               You can either specify an array of resolutions in descending
@@ -741,7 +742,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="scaleNames" type="gwc:stringList" minOccurs="0">
+      <xs:element name="scaleNames" type="gwc:StringList" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             If you specify scales or resolutions, you may optionally specify
@@ -775,13 +776,13 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="gridSubsets">
+  <xs:complexType name="GridSubsets">
     <xs:sequence>
-      <xs:element name="gridSubset" type="gwc:gridSubset" minOccurs="1" maxOccurs="unbounded" />
+      <xs:element name="gridSubset" type="gwc:GridSubset" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="gridSubset">
+  <xs:complexType name="GridSubset">
     <xs:sequence>
       <xs:element name="gridSetName" type="xs:string">
         <xs:annotation>
@@ -790,7 +791,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="extent" type="gwc:bounds" minOccurs="0">
+      <xs:element name="extent" type="gwc:Bounds" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             These bounds define the subset of the extent that this
@@ -829,7 +830,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="bounds">
+  <xs:complexType name="Bounds">
     <xs:sequence>
       <xs:element name="coords" type="gwc:coords" />
     </xs:sequence>
@@ -841,51 +842,47 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="wmsUrl">
+  <xs:complexType name="WmsUrl">
     <xs:sequence>
       <xs:element name="string" type="xs:string" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="metaWidthHeight">
+  <xs:complexType name="MetaWidthHeight">
     <xs:sequence>
       <xs:element name="int" type="xs:integer" minOccurs="2" maxOccurs="2" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="parameterFilters">
-    <xs:sequence>
-      <xs:sequence>
-        <xs:element name="regexParameterFilter" type="gwc:regexParameterFilter" minOccurs="0" maxOccurs="unbounded">
+  <xs:complexType name="ParameterFilters">
+    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+      <xs:choice>
+        <xs:element name="regexParameterFilter" type="gwc:RegexParameterFilter">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               Regular expression parameter filters
             </xs:documentation>
           </xs:annotation>
         </xs:element>
-      </xs:sequence>
-      <xs:sequence>
-        <xs:element name="floatParameterFilter" type="gwc:floatParameterFilter" minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="floatParameterFilter" type="gwc:FloatParameterFilter">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               Floating point parameter filters
             </xs:documentation>
           </xs:annotation>
         </xs:element>
-      </xs:sequence>
-      <xs:sequence>
-        <xs:element name="stringParameterFilter" type="gwc:stringParameterFilter" minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="stringParameterFilter" type="gwc:StringParameterFilter">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               String parameter filters
             </xs:documentation>
           </xs:annotation>
         </xs:element>
-      </xs:sequence>
+      </xs:choice>
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="regexParameterFilter">
+  <xs:complexType name="RegexParameterFilter">
     <xs:sequence>
       <xs:element name="key" type="xs:string">
         <xs:annotation>
@@ -922,7 +919,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="floatParameterFilter">
+  <xs:complexType name="FloatParameterFilter">
     <xs:sequence>
       <xs:element name="key" type="xs:string">
         <xs:annotation>
@@ -945,7 +942,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="values" type="gwc:floatList">
+      <xs:element name="values" type="gwc:FloatList">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of floating point numbers that are possible values. When a
@@ -970,7 +967,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="stringParameterFilter">
+  <xs:complexType name="StringParameterFilter">
     <xs:sequence>
       <xs:element name="key" type="xs:string">
         <xs:annotation>
@@ -993,7 +990,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="values" type="gwc:stringList">
+      <xs:element name="values" type="gwc:StringList">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A list of strings that represent possible values. These are case
@@ -1004,19 +1001,19 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="doubleList">
+  <xs:complexType name="DoubleList">
     <xs:sequence>
       <xs:element name="double" type="xs:double" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="floatList">
+  <xs:complexType name="FloatList">
     <xs:sequence>
       <xs:element name="float" type="xs:float" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="stringList">
+  <xs:complexType name="StringList">
     <xs:sequence>
       <xs:element name="string" type="xs:string" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
@@ -1024,7 +1021,7 @@
 
   <xs:complexType name="formatModifiers">
     <xs:sequence>
-      <xs:element name="formatModifier" type="gwc:formatModifier" minOccurs="1" maxOccurs="unbounded">
+      <xs:element name="formatModifier" type="gwc:FormatModifier" minOccurs="1" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             Format modifiers, used to request PNGs when compressing to JPEG,
@@ -1035,7 +1032,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="formatModifier">
+  <xs:complexType name="FormatModifier">
     <xs:sequence>
       <xs:element name="responseFormat" type="xs:string" minOccurs="1">
         <xs:annotation>
@@ -1097,9 +1094,9 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="requestFilters">
-    <xs:sequence>
-      <xs:element name="circularExtentFilter" type="gwc:circularExtentFilter" minOccurs="0" maxOccurs="unbounded">
+  <xs:complexType name="RequestFilters">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="circularExtentFilter" type="gwc:circularExtentFilter">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The circular extent filter is just a dummy filter for testing
@@ -1107,7 +1104,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="wmsRasterFilter" type="gwc:wmsRasterFilter" minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="wmsRasterFilter" type="gwc:WmsRasterFilter">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A filter that uses a raster to represent each tile on the grid. A
@@ -1120,7 +1117,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="fileRasterFilter" type="gwc:fileRasterFilter" minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="fileRasterFilter" type="gwc:FileRasterFilter">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             A filter that uses a raster to represent each tile on the grid. A
@@ -1132,7 +1129,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-    </xs:sequence>
+    </xs:choice>
   </xs:complexType>
 
   <xs:complexType name="circularExtentFilter">
@@ -1149,7 +1146,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="wmsRasterFilter">
+  <xs:complexType name="WmsRasterFilter">
     <xs:sequence>
       <xs:element name="name" type="xs:string" minOccurs="1">
         <xs:annotation>
@@ -1250,7 +1247,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="fileRasterFilter">
+  <xs:complexType name="FileRasterFilter">
     <xs:sequence>
       <xs:element name="name" type="xs:string" minOccurs="1">
         <xs:annotation>
@@ -1343,9 +1340,9 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="expireList">
+  <xs:complexType name="ExpireList">
     <xs:sequence>
-      <xs:element name="expirationRule" type="gwc:expirationRule" minOccurs="1" maxOccurs="unbounded">
+      <xs:element name="expirationRule" type="gwc:ExpirationRule" minOccurs="1" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The name of the filter. This is added to the HTTP header when a
@@ -1357,7 +1354,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="expirationRule">
+  <xs:complexType name="ExpirationRule">
     <xs:attribute name="minZoom" type="xs:int" />
     <xs:attribute name="expiration" type="xs:int" />
   </xs:complexType>
@@ -1376,22 +1373,22 @@
 
   <xs:complexType name="DEPRECATEDentry">
     <xs:sequence>
-      <xs:element name="srs" type="gwc:srs" />
+      <xs:element name="srs" type="gwc:Srs" />
       <xs:element name="grid" type="gwc:DEPRECATEDgrid" />
     </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="DEPRECATEDgrid">
     <xs:sequence>
-      <xs:element name="srs" type="gwc:srs" />
-      <xs:element name="dataBounds" type="gwc:bounds">
+      <xs:element name="srs" type="gwc:Srs" />
+      <xs:element name="dataBounds" type="gwc:Bounds">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             DEPRECATED
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="gridBounds" type="gwc:bounds">
+      <xs:element name="gridBounds" type="gwc:Bounds">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             DEPRECATED
@@ -1399,7 +1396,7 @@
         </xs:annotation>
       </xs:element>
       <xs:choice minOccurs="0" maxOccurs="1">
-        <xs:element name="resolutions" type="gwc:doubleList" minOccurs="0">
+        <xs:element name="resolutions" type="gwc:DoubleList" minOccurs="0">
           <xs:annotation>
             <xs:documentation xml:lang="en">
               DEPRECATED
@@ -1426,15 +1423,15 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="updateSources">
+  <xs:complexType name="UpdateSources">
     <xs:sequence>
       <xs:choice minOccurs="0" maxOccurs="1">
-        <xs:element name="geoRssFeed" type="gwc:geoRssFeed" minOccurs="0" maxOccurs="unbounded" />
+        <xs:element name="geoRssFeed" type="gwc:GeoRssFeed" minOccurs="0" maxOccurs="unbounded" />
       </xs:choice>
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="geoRssFeed">
+  <xs:complexType name="GeoRssFeed">
     <xs:sequence>
       <xs:element name="feedUrl" type="xs:string" minOccurs="1">
         <xs:annotation>
@@ -1516,7 +1513,7 @@
   </xs:complexType>
 
 
-  <xs:complexType name="layerMetaInformation">
+  <xs:complexType name="LayerMetaInformation">
     <xs:sequence>
       <xs:element name="title" type="xs:string" minOccurs="1">
         <xs:annotation>
@@ -1536,7 +1533,7 @@
   </xs:complexType>
 
 
-  <xs:complexType name="serviceInformationType">
+  <xs:complexType name="ServiceInformationType">
     <xs:sequence>
       <xs:element name="title" type="xs:string" minOccurs="0" maxOccurs="1">
         <xs:annotation>
@@ -1552,14 +1549,14 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="keywords" type="gwc:keywordsType" maxOccurs="1" minOccurs="0">
+      <xs:element name="keywords" type="gwc:KeywordsType" maxOccurs="1" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             Keywords that describe this service.
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="serviceProvider" type="gwc:serviceProviderType" maxOccurs="1" minOccurs="0">
+      <xs:element name="serviceProvider" type="gwc:ServiceProviderType" maxOccurs="1" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             Contact information for the organisation and/or responsible person
@@ -1585,7 +1582,7 @@
 
   </xs:complexType>
 
-  <xs:complexType name="keywordsType">
+  <xs:complexType name="KeywordsType">
     <xs:sequence>
       <xs:element name="keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
@@ -1597,7 +1594,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="serviceProviderType">
+  <xs:complexType name="ServiceProviderType">
     <xs:sequence>
       <xs:element name="providerName" type="xs:string" maxOccurs="1" minOccurs="0">
         <xs:annotation>
@@ -1613,7 +1610,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="serviceContact" type="gwc:serviceContactType" maxOccurs="1" minOccurs="0">
+      <xs:element name="serviceContact" type="gwc:ServiceContactType" maxOccurs="1" minOccurs="0">
         <xs:annotation>
           <xs:documentation xml:lang="en">
             The contact details for this service.
@@ -1623,7 +1620,7 @@
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="serviceContactType">
+  <xs:complexType name="ServiceContactType">
     <xs:sequence>
       <xs:element name="individualName" type="xs:string" maxOccurs="1" minOccurs="0">
         <xs:annotation>
