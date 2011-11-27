@@ -243,7 +243,7 @@ public class Demo {
         if(asPlugin) {
             openLayersPath = "../../openlayers/OpenLayers.js";
         } else {
-            openLayersPath = "../rest/web/openlayers/OpenLayers.js";
+            openLayersPath = "../rest/web/openlayers/openlayers-gwc.js";
         }
         
         String page =
@@ -267,6 +267,7 @@ public class Demo {
             + "  }                                              \n"
             
             +"OpenLayers.DOTS_PER_INCH = "+gridSubset.getDotsPerInch()+";\n"
+            +"OpenLayers.ImgPath = '../rest/web/openlayers/img/';\n" 
             +"OpenLayers.Util.onImageLoadErrorColor = 'transparent';\n"
         		
             +"function init(){\n"
