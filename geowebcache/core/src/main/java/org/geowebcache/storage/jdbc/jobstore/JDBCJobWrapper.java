@@ -94,11 +94,13 @@ class JDBCJobWrapper {
     private boolean useConnectionPooling;
 
     private int maxConnections;
+    
+    private boolean memOnly;
 
     private JdbcConnectionPool connPool;
     
     protected JDBCJobWrapper(String driverClass, String jdbcString, String username,
-            String password, boolean useConnectionPooling, int maxConnections)
+            String password, boolean useConnectionPooling, int maxConnections, boolean memOnly)
             throws ConfigurationException, SQLException {
         this.jdbcString = jdbcString;
         this.username = username;
@@ -106,6 +108,8 @@ class JDBCJobWrapper {
         this.driverClass = driverClass;
         this.useConnectionPooling = useConnectionPooling;
         this.maxConnections = maxConnections;
+        this.memOnly = memOnly;
+        
         try {
             Class.forName(driverClass);
         } catch (ClassNotFoundException cnfe) {
@@ -121,6 +125,11 @@ class JDBCJobWrapper {
 
     public JDBCJobWrapper(DefaultStorageFinder defStoreFind, boolean useConnectionPooling,
             int maxConnections) throws ConfigurationException, SQLException {
+        this(defStoreFind, useConnectionPooling, maxConnections, false);
+    }
+
+    public JDBCJobWrapper(DefaultStorageFinder defStoreFind, boolean useConnectionPooling,
+            int maxConnections, boolean memOnly) throws ConfigurationException, SQLException {
         String envStrUsername;
         String envStrPassword;
         String envStrJdbcUrl;
@@ -132,7 +141,7 @@ class JDBCJobWrapper {
         this.useConnectionPooling = useConnectionPooling;
         this.maxConnections = maxConnections;
         if (envStrUsername != null) {
-            username = envStrUsername;
+            this.username = envStrUsername;
         } else {
             this.username = "sa";
         }
@@ -158,8 +167,16 @@ class JDBCJobWrapper {
                 throw new ConfigurationException("Unable to create " + dir.getAbsolutePath()
                         + " for H2 database.");
             }
-            this.jdbcString = "jdbc:h2:file:" + path + File.separator + "gwc_jobstore"
-                    + ";TRACE_LEVEL_FILE=0;AUTO_SERVER=TRUE";
+            
+            String fileString;
+            this.memOnly = memOnly;
+            if(this.memOnly) {
+                log.info("JDBC jobstore is set to memory only. Job information will not be retained between instances of GeoWebCache.");
+                fileString = "mem:gwc_jobstore;DB_CLOSE_DELAY=-1";
+            } else {
+                fileString = "file:" + path + File.separator + "gwc_jobstore";
+            }
+            this.jdbcString = "jdbc:h2:" + fileString + ";TRACE_LEVEL_FILE=0;AUTO_SERVER=TRUE";
         }
 
         try {
