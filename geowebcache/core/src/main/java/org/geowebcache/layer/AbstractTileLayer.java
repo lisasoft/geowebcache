@@ -23,6 +23,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -51,9 +52,9 @@ public abstract class AbstractTileLayer extends TileLayer {
 
     private static final int[] DEFAULT_METATILING_FACTORS = { 1, 1 };
 
-    protected String name;
-
     protected Boolean enabled;
+
+    protected String name;
 
     protected LayerMetaInformation metaInformation;
 
@@ -61,18 +62,20 @@ public abstract class AbstractTileLayer extends TileLayer {
 
     protected List<FormatModifier> formatModifiers;
 
-    protected List<XMLGridSubset> gridSubsets;
-
-    protected List<ParameterFilter> parameterFilters;
-
     // 1.1.x compatibility
     protected Hashtable<SRS, XMLOldGrid> grids;
 
-    protected List<RequestFilter> requestFilters;
+    protected List<XMLGridSubset> gridSubsets;
 
     protected List<UpdateSourceDefinition> updateSources;
 
+    protected List<RequestFilter> requestFilters;
+
     protected Boolean useETags;
+
+    protected int[] metaWidthHeight;
+
+    protected String expireCache;
 
     protected ArrayList<ExpirationRule> expireCacheList;
 
@@ -80,13 +83,13 @@ public abstract class AbstractTileLayer extends TileLayer {
 
     protected ArrayList<ExpirationRule> expireClientsList;
 
-    protected String expireCache;
+    protected Integer backendTimeout;
 
     protected Boolean cacheBypassAllowed;
 
     protected Boolean queryable;
 
-    protected int[] metaWidthHeight;
+    protected List<ParameterFilter> parameterFilters;
 
     protected transient boolean saveExpirationHeaders;
 
@@ -95,10 +98,6 @@ public abstract class AbstractTileLayer extends TileLayer {
     protected transient Map<String, GridSubset> subSets;
 
     private transient LayerListenerList listeners;
-
-    protected Integer backendTimeout;
-
-    protected String wmsStyles = null;
 
     // Styles?
 
@@ -169,8 +168,8 @@ public abstract class AbstractTileLayer extends TileLayer {
      * @return
      */
     @Override
-    public Map<String, GridSubset> getGridSubsets() {
-        return this.subSets;
+    public Set<String> getGridSubsets() {
+        return Collections.unmodifiableSet(this.subSets.keySet());
     }
 
     /**
@@ -317,9 +316,7 @@ public abstract class AbstractTileLayer extends TileLayer {
      * @return the styles configured for the layer, may be null
      */
     @Override
-    public String getStyles() {
-        return wmsStyles;
-    }
+    public abstract String getStyles();
 
     /**
      * 
@@ -415,6 +412,30 @@ public abstract class AbstractTileLayer extends TileLayer {
 
     public List<RequestFilter> getRequestFilters() {
         return requestFilters;
+    }
+
+    @Override
+    public GridSubset getGridSubset(String gridSetId) {
+        return subSets.get(gridSetId);
+    }
+
+    @Override
+    public synchronized GridSubset removeGridSubset(String gridSetId) {
+        for (Iterator<XMLGridSubset> it = gridSubsets.iterator(); it.hasNext();) {
+            XMLGridSubset configSubset = it.next();
+            if (gridSetId.equals(configSubset.getGridSetName())) {
+                it.remove();
+                break;
+            }
+        }
+        return subSets.remove(gridSetId);
+    }
+
+    @Override
+    public synchronized void addGridSubset(GridSubset gridSubset) {
+        removeGridSubset(gridSubset.getName());
+        gridSubsets.add(new XMLGridSubset(gridSubset));
+        subSets.put(gridSubset.getName(), gridSubset);
     }
 
 }

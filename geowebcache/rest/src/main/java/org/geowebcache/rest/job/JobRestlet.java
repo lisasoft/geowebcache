@@ -164,7 +164,7 @@ public class JobRestlet extends GWCRestlet {
         
         JobObject job = null;
         
-        XStream xs = xmlConfig.configureXStreamForJobs(new XStream(new DomDriver()));
+        XStream xs = xmlConfig.getCconfiguredXStreamForJobs(new XStream(new DomDriver()));
         
         if(formatExtension.equalsIgnoreCase("xml")) {
             job = (JobObject) xs.fromXML(req.getEntity().getStream());
@@ -230,7 +230,7 @@ public class JobRestlet extends GWCRestlet {
         
         JobObject job = null;
         
-        XStream xs = xmlConfig.configureXStreamForJobs(new XStream(new DomDriver()));
+        XStream xs = xmlConfig.getCconfiguredXStreamForJobs(new XStream(new DomDriver()));
         
         if(formatExtension.equalsIgnoreCase("xml")) {
             job = (JobObject) xs.fromXML(req.getEntity().getStream());
@@ -326,7 +326,7 @@ public class JobRestlet extends GWCRestlet {
             long jobId, String formatExtension, InputStream is) 
     throws RestletException, IOException {
         
-        XStream xs = xmlConfig.configureXStreamForJobs(new XStream(new DomDriver()));
+        XStream xs = xmlConfig.getCconfiguredXStreamForJobs(new XStream(new DomDriver()));
 
         JobObject newJob = null;
 
@@ -364,7 +364,7 @@ public class JobRestlet extends GWCRestlet {
      * @return
      */
     public Representation getXMLRepresentation(Object o) {
-        XStream xs = xmlConfig.configureXStreamForJobs(new XStream());
+        XStream xs = xmlConfig.getCconfiguredXStreamForJobs(new XStream());
         String xmlText = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + xs.toXML(o);
 
         return new StringRepresentation(xmlText, MediaType.TEXT_XML);
@@ -379,7 +379,7 @@ public class JobRestlet extends GWCRestlet {
     public JsonRepresentation getJsonRepresentation(Object o) {
         JsonRepresentation rep = null;
         try {
-            XStream xs = xmlConfig.configureXStreamForJobs(
+            XStream xs = xmlConfig.getCconfiguredXStreamForJobs(
                     new XStream(new JsonHierarchicalStreamDriver()));
             JSONObject obj = new JSONObject(xs.toXML(o));
             rep = new JsonRepresentation(obj);

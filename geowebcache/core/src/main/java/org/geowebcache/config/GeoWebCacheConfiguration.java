@@ -69,9 +69,9 @@ public class GeoWebCacheConfiguration {
      */
     private List<TileLayer> layers;
 
-	Integer jobUpdateFrequency;
+    private Integer jobUpdateFrequency;
 
-	String basemapConfig;
+    private String basemapConfig;
 
     /**
      * Default constructor
@@ -118,6 +118,9 @@ public class GeoWebCacheConfiguration {
      */
     public void setVersion(String version) {
         this.version = version;
+        xmlns = "http://geowebcache.org/schema/" + version;
+        xsi_schemaLocation = xmlns + " http://geowebcache.org/schema/" + version
+                + "/geowebcache.xsd";
     }
 
     /**
@@ -253,4 +256,22 @@ public class GeoWebCacheConfiguration {
     public List<TileLayer> getLayers() {
         return layers;
     }
+
+    public Integer getJobUpdateFrequency() {
+        return jobUpdateFrequency;
+    }
+
+    public void setJobUpdateFrequency(Integer jobUpdateFrequency) {
+        this.jobUpdateFrequency = jobUpdateFrequency;
+    }
+
+    public String getBasemapConfig() {
+        return basemapConfig;
+    }
+
+    public void setBasemapConfig(String basemapConfig) {
+        this.basemapConfig = basemapConfig;
+    }
+    
+    
 }

@@ -239,13 +239,15 @@ public class TileLayerDispatcher implements DisposableBean {
         config.save();
     }
 
-    private Configuration getConfiguration(TileLayer tl) {
+    public Configuration getConfiguration(TileLayer tl) {
+        Assert.notNull(tl, "layer is null");
         for (Configuration c : configs) {
             if (null != c.getTileLayer(tl.getName())) {
                 return c;
             }
         }
-        return null;
+        throw new IllegalArgumentException("No configuration found containing layer "
+                + tl.getName());
     }
 
     /**
@@ -291,6 +293,10 @@ public class TileLayerDispatcher implements DisposableBean {
         if (null != gridSetBroker.get(gridSet.getName())) {
             throw new IllegalArgumentException("GridSet " + gridSet.getName() + " already exists");
         }
+        saveGridSet(gridSet);
+    }
+
+    private void saveGridSet(final GridSet gridSet) throws IOException {
         XMLConfiguration persistingConfig = getXmlConfiguration();
         persistingConfig.addOrReplaceGridSet(new XMLGridSet(gridSet));
         persistingConfig.save();

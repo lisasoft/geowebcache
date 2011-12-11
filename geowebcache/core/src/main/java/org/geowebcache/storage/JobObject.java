@@ -107,7 +107,10 @@ public class JobObject {
             obj.gridSetId = tl.getGridSubsetForSRS(sr.getSRS()).getName();
         }
         if (obj.gridSetId == null) {
-            obj.gridSetId = tl.getGridSubsets().entrySet().iterator().next().getKey();
+			// need to check this is a gridset id
+            obj.gridSetId = tl.getGridSubsets().iterator().next();
+
+            // obj.gridSetId = tl.getGridSubsets().entrySet().iterator().next().getKey();
         }
 
         GridSubset gridSubset = tl.getGridSubset(obj.gridSetId);

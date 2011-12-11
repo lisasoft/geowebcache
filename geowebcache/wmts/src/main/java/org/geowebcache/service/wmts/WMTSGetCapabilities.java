@@ -374,10 +374,9 @@ public class WMTSGetCapabilities {
      
       
      private void layerGridSubSets(StringBuilder str, TileLayer layer) {
-         Iterator<GridSubset> gridSubsets = layer.getGridSubsets().values().iterator();
-         
-         while(gridSubsets.hasNext()) {
-             GridSubset gridSubset = gridSubsets.next();
+
+        for (String gridSetId : layer.getGridSubsets()) {
+            GridSubset gridSubset = layer.getGridSubset(gridSetId);
          
              str.append("    <TileMatrixSetLink>");
              str.append("      <TileMatrixSet>" + gridSubset.getName() + "</TileMatrixSet>\n");
@@ -408,7 +407,7 @@ public class WMTSGetCapabilities {
          // If the following is not good enough, please get in touch and we will try to fix it :)
          str.append("    <ows:SupportedCRS>urn:ogc:def:crs:EPSG::"+gridSet.getSrs().getNumber()+"</ows:SupportedCRS>\n");
          // TODO detect these str.append("    <WellKnownScaleSet>urn:ogc:def:wkss:GlobalCRS84Pixel</WellKnownScaleSet>\n");
-         Grid[] grids = gridSet.getGrids();
+         Grid[] grids = gridSet.getGridLevels();
          for(int i=0; i<grids.length; i++) {
              double[] tlCoordinates = gridSet.getOrderedTopLeftCorner(i);
              tileMatrix(str, grids[i], tlCoordinates, gridSet.getTileWidth(), gridSet.getTileHeight(), gridSet.isScaleWarning());

@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,15 +16,25 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
+import org.geowebcache.grid.BoundingBox;
+import org.geowebcache.grid.GridSet;
 import org.geowebcache.grid.GridSetBroker;
+import org.geowebcache.grid.GridSetFactory;
 import org.geowebcache.grid.GridSubset;
+import org.geowebcache.grid.SRS;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
+import org.xml.sax.SAXParseException;
 
 public class XMLConfigurationTest extends TestCase {
+
+    private static final Log log = LogFactory.getLog(XMLConfigurationTest.class);
 
     private File configDir;
 
@@ -143,6 +154,15 @@ public class XMLConfigurationTest extends TestCase {
 
         config.save();
 
+        // IOUtils.copy(new FileInputStream(configFile), System.out);
+        try {
+            XMLConfiguration.validate(XMLConfiguration
+                    .loadDocument(new FileInputStream(configFile)));
+        } catch (SAXParseException e) {
+            log.error(e.getMessage());
+            fail(e.getMessage());
+        }
+
         XMLConfiguration config2 = new XMLConfiguration(null, configDir.getAbsolutePath());
         config2.initialize(gridSetBroker);
         assertEquals(1, config2.getTileLayerCount());
@@ -156,4 +176,69 @@ public class XMLConfigurationTest extends TestCase {
         assertEquals(parameterFilters, l.getParameterFilters());
     }
 
+    public void testSaveGridSet() throws Exception {
+        String name = "testGrid";
+        SRS srs = SRS.getEPSG4326();
+        BoundingBox extent = new BoundingBox(-1, -1, 1, 1);
+        boolean alignTopLeft = true;
+        double[] resolutions = { 3, 2, 1 };
+        double[] scaleDenoms = null;
+        Double metersPerUnit = 1.5;
+        double pixelSize = 2 * GridSetFactory.DEFAULT_PIXEL_SIZE_METER;
+        String[] scaleNames = { "uno", "dos", "tres" };
+        int tileWidth = 128;
+        int tileHeight = 512;
+        boolean yCoordinateFirst = true;
+
+        GridSet gridSet = GridSetFactory.createGridSet(name, srs, extent, alignTopLeft,
+                resolutions, scaleDenoms, metersPerUnit, pixelSize, scaleNames, tileWidth,
+                tileHeight, yCoordinateFirst);
+        gridSet.setDescription("test description");
+
+        config.addOrReplaceGridSet(new XMLGridSet(gridSet));
+        config.save();
+
+        // IOUtils.copy(new FileInputStream(configFile), System.out);
+        try {
+            XMLConfiguration.validate(XMLConfiguration
+                    .loadDocument(new FileInputStream(configFile)));
+        } catch (SAXParseException e) {
+            log.error(e.getMessage());
+            fail(e.getMessage());
+        }
+
+        XMLConfiguration config2 = new XMLConfiguration(null, configDir.getAbsolutePath());
+        GridSetBroker gridSetBroker2 = new GridSetBroker(true, false);
+        config2.initialize(gridSetBroker2);
+
+        GridSet gridSet2 = gridSetBroker2.get(name);
+        assertNotNull(gridSet2);
+        assertEquals(gridSet, gridSet2);
+    }
+
+    public void testSaveCurrentVersion() throws Exception {
+
+        URL source = XMLConfiguration.class
+                .getResource(XMLConfigurationBackwardsCompatibilityTest.PREVIOUS_FILENAME);
+        configFile = new File(configDir, "geowebcache.xml");
+        FileUtils.copyURLToFile(source, configFile);
+
+        gridSetBroker = new GridSetBroker(true, false);
+        config = new XMLConfiguration(null, configDir.getAbsolutePath());
+        config.initialize(gridSetBroker);
+
+        final String previousVersion = config.getVersion();
+        assertNotNull(previousVersion);
+
+        config.save();
+
+        final String currVersion = XMLConfiguration.getCurrentSchemaVersion();
+        assertNotNull(currVersion);
+        assertFalse(previousVersion.equals(currVersion));
+
+        config = new XMLConfiguration(null, configDir.getAbsolutePath());
+        config.initialize(gridSetBroker);
+        final String savedVersion = config.getVersion();
+        assertEquals(currVersion, savedVersion);
+    }
 }

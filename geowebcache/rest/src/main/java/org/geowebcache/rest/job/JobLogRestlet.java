@@ -141,7 +141,7 @@ public class JobLogRestlet extends GWCRestlet {
      * @return
      */
     public Representation getXMLRepresentation(Object o) {
-        XStream xs = xmlConfig.configureXStreamForJobLogs(new XStream());
+        XStream xs = xmlConfig.getConfiguredXStreamForJobLogs(new XStream());
         String xmlText = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + xs.toXML(o);
         
         return new StringRepresentation(xmlText, MediaType.TEXT_XML);
@@ -156,7 +156,7 @@ public class JobLogRestlet extends GWCRestlet {
     public JsonRepresentation getJsonRepresentation(Object o) {
         JsonRepresentation rep = null;
         try {
-            XStream xs = xmlConfig.configureXStreamForJobLogs(
+            XStream xs = xmlConfig.getConfiguredXStreamForJobLogs(
                     new XStream(new JsonHierarchicalStreamDriver()));
             JSONObject obj = new JSONObject(xs.toXML(o));
             rep = new JsonRepresentation(obj);

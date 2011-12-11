@@ -7,7 +7,14 @@ import org.geowebcache.layer.TileLayer;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
+import org.geowebcache.storage.TileRange;
 
+/**
+ * Provides seed estimating features, like the number of tiles involved, anticipated disk space and time taken to seed.
+ * Somewhat rudimentary at the moment. Makes assumption of average tile size and time to seed. Would be improved if some metrics were kept during seeding of a layer.
+ * @author jgroffen
+ *
+ */
 public class SeedEstimator {
 
     TileBreeder seeder = null;
@@ -20,16 +27,29 @@ public class SeedEstimator {
      * @param gridBounds
      * @return -1 if too many
      */
-    public long tileCount(long[][] coveredGridLevels, int startZoom, int stopZoom) {
+    public long tileCount(TileRange tr) {
+        //TODO: Noticed that metatiling isn't always factored in in the provided tile range
+        long[][] coveredGridLevels = new long[tr.getZoomStop() - tr.getZoomStart() + 1][];
+
+        for (int i = tr.getZoomStart(); i <= tr.getZoomStop(); i++) {
+            long[] gridBounds = tr.rangeBounds(i);
+            coveredGridLevels[i] = gridBounds;
+        }
+
+        return tileCount(coveredGridLevels, tr.getZoomStart(), tr.getZoomStop());
+    }
+
+    public long tileCount(long[][] coveredGridLevels, int zoomStart, int zoomStop) {
+
         long count = 0;
 
-        for (int i = startZoom; i <= stopZoom; i++) {
+        for (int i = zoomStart; i <= zoomStop; i++) {
             long[] gridBounds = coveredGridLevels[i];
 
             long thisLevel = (1 + gridBounds[2] - gridBounds[0])
                     * (1 + gridBounds[3] - gridBounds[1]);
 
-            if (thisLevel > (Long.MAX_VALUE / 4) && i != stopZoom) {
+            if (thisLevel > (Long.MAX_VALUE / 4) && i != zoomStop) {
                 return -1;
             } else {
                 count += thisLevel;
@@ -51,18 +71,25 @@ public class SeedEstimator {
      * @return
      * @throws GeoWebCacheException
      */
-    public long tileCount(String layerName, String gridSetId, BoundingBox bounds, int zoomStart, int zoomStop) throws GeoWebCacheException {
-        if(seeder == null) {
-            throw new GeoWebCacheException("Seeder not available (probably shouldn't have called tileCount with a layerName)");
+    public long tileCount(String layerName, String gridSetId, BoundingBox bounds, int zoomStart,
+            int zoomStop) throws GeoWebCacheException {
+
+        //TODO: Noticed that metatiling isn't factored in using the calculation below
+        if (seeder == null) {
+            throw new GeoWebCacheException(
+                    "Seeder not available (probably shouldn't have called tileCount with a layerName)");
         }
 
         TileLayer tl = seeder.findTileLayer(layerName);
 
         if (gridSetId == null) {
-            gridSetId = tl.getGridSubsets().entrySet().iterator().next().getKey();
+            // assume the first gridset
+            // need to make sure this is a gridSetId
+            gridSetId = tl.getGridSubsets().iterator().next();
         }
+
         GridSubset gridSubset = tl.getGridSubset(gridSetId);
-        
+
         long[][] coveredGridLevels;
 
         if (bounds == null) {
@@ -98,19 +125,21 @@ public class SeedEstimator {
      */
     private int getTileSizeEstimate(String layerName, String format) {
         MimeType mt;
-        // if(seeder == null) {
+        /*
+         if(seeder == null) {
             // we do an estimate without the layer information at this point
             // but we will likely want to incorporate it in the future
-        // } else {
-            // TileLayer tl = seeder.findTileLayer(layerName);
+         } else {
+             TileLayer tl = seeder.findTileLayer(layerName);
             
             // we won't worry about checking the format modifiers in the estimate yet
             // palette size and level of compression to apply would be useful in 
             // improving the accuracy of this estimate. For now assumes jpeg is raster 
             // that's possibly satellite imagery and png is linework / vectors
             
-            // FormatModifier fm = tl.getFormatModifier(mt);
-        // }
+             FormatModifier fm = tl.getFormatModifier(mt);
+         }
+         */
 
         if(format == null) {
             mt = ImageMime.png;

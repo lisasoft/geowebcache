@@ -231,7 +231,7 @@ public class TileLayerRestlet extends GWCRestlet {
     protected TileLayer deserializeAndCheckLayerInternal(String layerName, String formatExtension,
             InputStream is) throws RestletException, IOException {
 
-        XStream xs = xmlConfig.configureXStreamForLayers(new XStream(new DomDriver()));
+        XStream xs = xmlConfig.getConfiguredXStreamForLayers(new XStream(new DomDriver()));
 
         WMSLayer newLayer;
 
@@ -266,7 +266,7 @@ public class TileLayerRestlet extends GWCRestlet {
      * @return
      */
     public Representation getXMLRepresentation(TileLayer layer) {
-        XStream xs = xmlConfig.configureXStreamForLayers(new XStream());
+        XStream xs = xmlConfig.getConfiguredXStreamForLayers(new XStream());
         String xmlText = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + xs.toXML(layer);
 
         return new StringRepresentation(xmlText, MediaType.TEXT_XML);
@@ -281,7 +281,7 @@ public class TileLayerRestlet extends GWCRestlet {
     public JsonRepresentation getJsonRepresentation(TileLayer layer) {
         JsonRepresentation rep = null;
         try {
-            XStream xs = xmlConfig.configureXStreamForLayers(
+            XStream xs = xmlConfig.getConfiguredXStreamForLayers(
                     new XStream(new JsonHierarchicalStreamDriver()));
             JSONObject obj = new JSONObject(xs.toXML(layer));
             rep = new JsonRepresentation(obj);

@@ -30,7 +30,7 @@ To create a new seed task, fill out the form with the following information:
    * - :guilabel:`Type of operation`
      - This is one of the **seed**, **reseed**, or **truncate** operations described above.  
    * - :guilabel:`Grid set`
-     - The name of any valid :ref:`grid set <configuration.layers.gridsets>` as defined for a given layer.
+     - The name of any valid :ref:`grid set <concepts.layers.gridsets>` as defined for a given layer.
    * - :guilabel:`Throughput`
      - Maximum number of requests per second this task is allowed to make. Helps ensure the backend service doesn't get flooded with requests. Note that this throttles the number of requests, not tiles.
    * - :guilabel:`Schedule`

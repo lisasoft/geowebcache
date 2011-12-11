@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,6 +36,7 @@ import org.geowebcache.filter.request.RequestFilter;
 import org.geowebcache.filter.request.RequestFilterException;
 import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridMismatchException;
+import org.geowebcache.grid.GridSet;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.grid.GridSubset;
 import org.geowebcache.grid.OutsideCoverageException;
@@ -111,11 +112,11 @@ public abstract class TileLayer {
     public abstract LayerMetaInformation getMetaInformation();
 
     /**
-     * Retrieves a list of Grids for this layer
+     * Retrieves the GridSet names for this layer
      * 
-     * @return
+     * @see #getGridSubset(String)
      */
-    public abstract Map<String, GridSubset> getGridSubsets();
+    public abstract Set<String> getGridSubsets();
 
     /**
      * @return possibly empty list of update sources for this layer
@@ -254,15 +255,12 @@ public abstract class TileLayer {
      * @throws GeoWebCacheException
      */
     public GridSubset getGridSubsetForSRS(SRS srs) {
-        Map<String, GridSubset> gridSubsets = getGridSubsets();
-        Iterator<GridSubset> iter = gridSubsets.values().iterator();
-        while (iter.hasNext()) {
-            GridSubset gridSubset = iter.next();
+        for (String gridSet : getGridSubsets()) {
+            GridSubset gridSubset = getGridSubset(gridSet);
             if (gridSubset.getSRS().equals(srs)) {
                 return gridSubset;
             }
         }
-
         return null;
     }
 
@@ -313,7 +311,7 @@ public abstract class TileLayer {
      * @return the resolutions (units/pixel) for the layer
      */
     public double[] getResolutions(String gridSetId) throws GeoWebCacheException {
-        return getGridSubsets().get(gridSetId).getResolutions();
+        return getGridSubset(gridSetId).getResolutions();
     }
 
     public FormatModifier getFormatModifier(MimeType responseFormat) {
@@ -356,7 +354,7 @@ public abstract class TileLayer {
      */
     public long[] indexFromBounds(String gridSetId, BoundingBox tileBounds)
             throws GridMismatchException {
-        return getGridSubsets().get(gridSetId).closestIndex(tileBounds);
+        return getGridSubset(gridSetId).closestIndex(tileBounds);
     }
 
     /**
@@ -367,7 +365,7 @@ public abstract class TileLayer {
      * @throws GeoWebCacheException
      */
     public BoundingBox boundsFromIndex(String gridSetId, long[] gridLoc) {
-        return getGridSubsets().get(gridSetId).boundsFromIndex(gridLoc);
+        return getGridSubset(gridSetId).boundsFromIndex(gridLoc);
     }
 
     /**
@@ -515,20 +513,16 @@ public abstract class TileLayer {
         }
     }
 
-    public GridSubset getDefaultGridSubset() {
-        Iterator<Entry<String, GridSubset>> iter = getGridSubsets().entrySet().iterator();
+    /**
+     * @param gridSetId
+     *            the name of the {@link GridSet}
+     * @return the {@link GridSubset} this layer contains for the given GridSet
+     */
+    public abstract GridSubset getGridSubset(String gridSetId);
 
-        if (iter.hasNext()) {
-            Entry<String, GridSubset> entry = iter.next();
-            return entry.getValue();
-        }
-        
-        return null;
-    }
+    public abstract GridSubset removeGridSubset(String gridSetId);
 
-    public GridSubset getGridSubset(String gridSetId) {
-        return getGridSubsets().get(gridSetId);
-    }
+    public abstract void addGridSubset(GridSubset gridSubset);
 
     protected ByteArrayResource getImageBuffer(ThreadLocal<ByteArrayResource> tl) {
         ByteArrayResource buffer = tl.get();
